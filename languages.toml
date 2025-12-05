@@ -1,5 +1,4 @@
 # Language support configuration.
-# See the languages documentation: https://docs.helix-editor.com/master/languages.html
 
 use-grammars = { except = [ "wren", "gemini" ] }
 
@@ -31,7 +30,7 @@ crystalline = { command = "crystalline", args = ["--stdio"] }
 cs = { command = "cs", args = ["launch", "--contrib", "smithy-language-server", "--", "0"] }
 csharp-ls = { command = "csharp-ls" }
 cuelsp = { command = "cuelsp" }
-dart = { command = "dart", args = ["language-server", "--client-id=helix"] }
+dart = { command = "dart", args = ["language-server", "--client-id=fugue"] }
 dhall-lsp-server = { command = "dhall-lsp-server" }
 djlsp = { command = "djlsp" }
 docker-langserver = { command = "docker-langserver", args = ["--stdio"] }
@@ -218,7 +217,7 @@ watcher = "server"
 [language-server.typescript-language-server]
 command = "typescript-language-server"
 args = ["--stdio"]
-config.hostInfo = "helix"
+config.hostInfo = "fugue"
 
 [language-server.typescript-language-server.config.typescript.inlayHints]
 includeInlayEnumMemberValueHints = true
@@ -2132,7 +2131,7 @@ source = { git = "https://github.com/mtoohey31/tree-sitter-gitattributes", rev =
 [[language]]
 name = "git-ignore"
 scope = "source.gitignore"
-file-types = [{ glob = ".gitignore_global" }, { glob = "git/ignore" }, { glob = ".git/info/exclude" }, { glob = ".ignore" }, { glob = "CODEOWNERS" }, { glob = ".config/helix/ignore" }, { glob = ".helix/ignore" }, { glob = ".*ignore" }, { glob = ".git-blame-ignore-revs" }]
+file-types = [{ glob = ".gitignore_global" }, { glob = "git/ignore" }, { glob = ".git/info/exclude" }, { glob = ".ignore" }, { glob = "CODEOWNERS" }, { glob = ".config/fugue/ignore" }, { glob = ".fugue/ignore" }, { glob = ".*ignore" }, { glob = ".git-blame-ignore-revs" }]
 injection-regex = "git-ignore"
 comment-token = "#"
 grammar = "gitignore"

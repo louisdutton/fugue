@@ -1,24 +1,24 @@
 [workspace]
 resolver = "2"
 members = [
-  "helix-core",
-  "helix-view",
-  "helix-term",
-  "helix-tui",
-  "helix-lsp-types",
-  "helix-lsp",
-  "helix-event",
-  "helix-dap-types",
-  "helix-dap",
-  "helix-loader",
-  "helix-vcs",
-  "helix-parsec",
-  "helix-stdx",
+  "fugue-core",
+  "fugue-view",
+  "fugue-term",
+  "fugue-tui",
+  "fugue-lsp-types",
+  "fugue-lsp",
+  "fugue-event",
+  "fugue-dap-types",
+  "fugue-dap",
+  "fugue-loader",
+  "fugue-vcs",
+  "fugue-parsec",
+  "fugue-stdx",
   "xtask",
 ]
 
 default-members = [
-  "helix-term"
+  "fugue-term"
 ]
 
 [profile.release]
@@ -33,9 +33,9 @@ opt-level = 3
 
 [profile.integration]
 inherits = "test"
-package.helix-core.opt-level = 2
-package.helix-tui.opt-level = 2
-package.helix-term.opt-level = 2
+package.fugue-core.opt-level = 2
+package.fugue-tui.opt-level = 2
+package.fugue-term.opt-level = 2
 
 [workspace.dependencies]
 tree-house = { version = "0.3.0", default-features = false }
@@ -60,9 +60,9 @@ globset = "=0.4.16"
 [workspace.package]
 version = "25.7.1"
 edition = "2021"
-authors = ["Blaž Hrastnik <blaz@mxxn.io>"]
+authors = ["Louis Dutton <louis@dutton.digital>", "Blaž Hrastnik <blaz@mxxn.io>"]
 categories = ["editor"]
-repository = "https://github.com/helix-editor/helix"
-homepage = "https://helix-editor.com"
-license = "MPL-2.0"
+repository = "https://github.com/louisdutton/fugue"
+homepage = "https://github.com/louisdutton/fugue"
+license = "GPL-3.0-only"
 rust-version = "1.82"
