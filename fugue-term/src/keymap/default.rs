@@ -73,9 +73,41 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
         "o" => open_below,
         "O" => open_above,
 
-        "d" => delete_selection,
+        "d" => { "Delete"
+            "d" => delete_current_line,
+            "i" => delete_textobject_inner,
+            "a" => delete_textobject_around,
+            "w" => delete_next_word_start,
+            "b" => delete_prev_word_start,
+            "e" => delete_next_word_end,
+            "W" => delete_next_long_word_start,
+            "B" => delete_prev_long_word_start,
+            "E" => delete_next_long_word_end,
+            "H" => delete_to_line_start,
+            "L" => delete_to_line_end,
+            "^" => delete_to_first_nonwhitespace,
+            "G" => delete_to_line,
+            "K" => delete_to_file_start,
+            "J" => delete_to_last_line,
+        },
         "A-d" => delete_selection_noyank,
-        "c" => change_selection,
+        "c" => { "Change"
+            "c" => change_current_line,
+            "i" => change_textobject_inner,
+            "a" => change_textobject_around,
+            "w" => change_next_word_start,
+            "b" => change_prev_word_start,
+            "e" => change_next_word_end,
+            "W" => change_next_long_word_start,
+            "B" => change_prev_long_word_start,
+            "E" => change_next_long_word_end,
+            "H" => change_to_line_start,
+            "L" => change_to_line_end,
+            "^" => change_to_first_nonwhitespace,
+            "G" => change_to_line,
+            "K" => change_to_file_start,
+            "J" => change_to_last_line,
+        },
         "A-c" => change_selection_noyank,
 
         "C" => copy_selection_on_next_line,
@@ -153,7 +185,23 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
         "A-u" => earlier,
         "A-U" => later,
 
-        "y" => yank,
+        "y" => { "Yank"
+            "y" => yank_current_line,
+            "i" => yank_textobject_inner,
+            "a" => yank_textobject_around,
+            "w" => yank_next_word_start,
+            "b" => yank_prev_word_start,
+            "e" => yank_next_word_end,
+            "W" => yank_next_long_word_start,
+            "B" => yank_prev_long_word_start,
+            "E" => yank_next_long_word_end,
+            "H" => yank_to_line_start,
+            "L" => yank_to_line_end,
+            "^" => yank_to_first_nonwhitespace,
+            "G" => yank_to_line,
+            "K" => yank_to_file_start,
+            "J" => yank_to_last_line,
+        },
         // yank_all
         "p" => paste_after,
         // paste_all
@@ -373,6 +421,12 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
         "esc" => exit_select_mode,
 
         "v" => normal_mode,
+
+        // In select mode, operators act immediately on selection
+        "d" => delete_selection,
+        "c" => change_selection,
+        "y" => yank,
+
         "g" => { "Goto"
             "g" => extend_to_file_start,
             "|" => extend_to_column,
@@ -408,6 +462,7 @@ pub fn default() -> HashMap<Mode, KeyTrie> {
         "home" => goto_line_start,
         "end" => goto_line_end_newline,
     });
+
     hashmap!(
         Mode::Normal => normal,
         Mode::Select => select,

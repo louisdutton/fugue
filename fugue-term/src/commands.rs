@@ -397,6 +397,54 @@ impl MappableCommand {
         delete_selection_noyank, "Delete selection without yanking",
         change_selection, "Change selection",
         change_selection_noyank, "Change selection without yanking",
+        // Delete commands
+        delete_current_line, "Delete current line",
+        delete_textobject_inner, "Delete inside text object",
+        delete_textobject_around, "Delete around text object",
+        delete_next_word_start, "Delete to start of next word",
+        delete_prev_word_start, "Delete to start of previous word",
+        delete_next_word_end, "Delete to end of next word",
+        delete_next_long_word_start, "Delete to start of next WORD",
+        delete_prev_long_word_start, "Delete to start of previous WORD",
+        delete_next_long_word_end, "Delete to end of next WORD",
+        delete_to_line_end, "Delete to line end",
+        delete_to_line_start, "Delete to line start",
+        delete_to_first_nonwhitespace, "Delete to first non-whitespace",
+        delete_to_line, "Delete to line",
+        delete_to_file_start, "Delete to file start",
+        delete_to_last_line, "Delete to last line",
+        // Change commands
+        change_current_line, "Change current line",
+        change_textobject_inner, "Change inside text object",
+        change_textobject_around, "Change around text object",
+        change_next_word_start, "Change to start of next word",
+        change_prev_word_start, "Change to start of previous word",
+        change_next_word_end, "Change to end of next word",
+        change_next_long_word_start, "Change to start of next WORD",
+        change_prev_long_word_start, "Change to start of previous WORD",
+        change_next_long_word_end, "Change to end of next WORD",
+        change_to_line_end, "Change to line end",
+        change_to_line_start, "Change to line start",
+        change_to_first_nonwhitespace, "Change to first non-whitespace",
+        change_to_line, "Change to line",
+        change_to_file_start, "Change to file start",
+        change_to_last_line, "Change to last line",
+        // Yank commands
+        yank_current_line, "Yank current line",
+        yank_textobject_inner, "Yank inside text object",
+        yank_textobject_around, "Yank around text object",
+        yank_next_word_start, "Yank to start of next word",
+        yank_prev_word_start, "Yank to start of previous word",
+        yank_next_word_end, "Yank to end of next word",
+        yank_next_long_word_start, "Yank to start of next WORD",
+        yank_prev_long_word_start, "Yank to start of previous WORD",
+        yank_next_long_word_end, "Yank to end of next WORD",
+        yank_to_line_end, "Yank to line end",
+        yank_to_line_start, "Yank to line start",
+        yank_to_first_nonwhitespace, "Yank to first non-whitespace",
+        yank_to_line, "Yank to line",
+        yank_to_file_start, "Yank to file start",
+        yank_to_last_line, "Yank to last line",
         collapse_selection, "Collapse selection into single cursor",
         flip_selections, "Flip selection cursor and anchor",
         ensure_selections_forward, "Ensure all selections face forward",
@@ -2974,6 +3022,32 @@ fn change_selection(cx: &mut Context) {
 fn change_selection_noyank(cx: &mut Context) {
     delete_selection_impl(cx, Operation::Change, YankAction::NoYank);
 }
+
+// ============================================================================
+// OPERATOR HELPERS
+// ============================================================================
+
+/// Delete the current selection
+fn delete_selection_op(cx: &mut Context) {
+    delete_selection_impl(cx, Operation::Delete, YankAction::Yank);
+    cx.editor.mode = Mode::Normal;
+}
+
+/// Change the current selection (delete and enter insert mode)
+fn change_selection_op(cx: &mut Context) {
+    delete_selection_impl(cx, Operation::Change, YankAction::Yank);
+    // Mode is set by delete_selection_impl
+}
+
+/// Yank the current selection
+fn yank_selection_op(cx: &mut Context) {
+    yank(cx);
+    cx.editor.mode = Mode::Normal;
+}
+
+// ============================================================================
+// TEXT OBJECT HANDLING WITH OPERATORS
+// ============================================================================
 
 fn collapse_selection(cx: &mut Context) {
     let (view, doc) = current!(cx.editor);
@@ -7000,4 +7074,451 @@ fn lsp_or_syntax_workspace_symbol_picker(cx: &mut Context) {
     } else {
         syntax_workspace_symbol_picker(cx);
     }
+}
+
+// ============================================================================
+// OPERATOR + MOTION/TEXT OBJECT COMMANDS (Helix-style nested menus)
+// ============================================================================
+
+// Helper macro to create operator+motion commands
+// This extends the selection from current position to the motion destination,
+// then applies the operator to that selection
+macro_rules! operator_motion {
+    ($name:ident, $operator:expr, $motion:expr, $doc:expr) => {
+        #[doc = $doc]
+        fn $name(cx: &mut Context) {
+            // Store original selection to extend from
+            let (view, doc) = current!(cx.editor);
+            let original_selection = doc.selection(view.id).clone();
+
+            // Apply the motion (this moves the cursor)
+            $motion(cx);
+
+            // Now extend selection from original position to new cursor position
+            let (view, doc) = current!(cx.editor);
+            let text = doc.text().slice(..);
+            let new_selection = doc.selection(view.id).clone();
+
+            // Pair up the original and new ranges and extend each one
+            let extended_selection = original_selection
+                .ranges()
+                .iter()
+                .zip(new_selection.ranges().iter())
+                .map(|(orig_range, new_range)| {
+                    let end_pos = new_range.cursor(text);
+                    orig_range.put_cursor(text, end_pos, true)
+                })
+                .collect();
+
+            doc.set_selection(view.id, extended_selection);
+
+            // Now apply the operator to the extended selection
+            $operator(cx);
+        }
+    };
+}
+
+// Helper to create operator+textobject commands
+fn operator_with_textobject(
+    cx: &mut Context,
+    operator_fn: fn(&mut Context),
+    title: &'static str,
+    objtype: textobject::TextObject,
+) {
+    let count = cx.count.map(|n| n.get()).unwrap_or(1);
+
+    let help_text = [
+        ("w", "Word"),
+        ("W", "WORD"),
+        ("p", "Paragraph"),
+        ("t", "Type definition (tree-sitter)"),
+        ("f", "Function (tree-sitter)"),
+        ("a", "Argument/parameter (tree-sitter)"),
+        ("c", "Comment (tree-sitter)"),
+        ("T", "Test (tree-sitter)"),
+        ("e", "Data structure entry (tree-sitter)"),
+        ("m", "Closest surrounding pair (tree-sitter)"),
+        ("x", "(X)HTML element (tree-sitter)"),
+        (" ", "... or any character acting as a pair"),
+    ];
+
+    cx.editor.autoinfo = Some(Info::new(title, &help_text));
+
+    cx.on_next_key(move |cx, event| {
+        cx.editor.autoinfo = None;
+        if let Some(ch) = event.char() {
+            let (view, doc) = current!(cx.editor);
+            let loader = cx.editor.syn_loader.load();
+            let text = doc.text().slice(..);
+
+            let textobject_treesitter = |obj_name: &str, range: Range| -> Range {
+                let Some(syntax) = doc.syntax() else {
+                    return range;
+                };
+                textobject::textobject_treesitter(
+                    text, range, objtype, obj_name, syntax, &loader, count,
+                )
+            };
+
+            // Transform selection based on text object
+            let selection = doc.selection(view.id).clone().transform(|range| match ch {
+                'w' => textobject::textobject_word(text, range, objtype, count, false),
+                'W' => textobject::textobject_word(text, range, objtype, count, true),
+                't' => textobject_treesitter("class", range),
+                'f' => textobject_treesitter("function", range),
+                'a' => textobject_treesitter("parameter", range),
+                'c' => textobject_treesitter("comment", range),
+                'T' => textobject_treesitter("test", range),
+                'e' => textobject_treesitter("entry", range),
+                'x' => textobject_treesitter("xml-element", range),
+                'p' => textobject::textobject_paragraph(text, range, objtype, count),
+                'm' => textobject::textobject_pair_surround_closest(
+                    doc.syntax(),
+                    text,
+                    range,
+                    objtype,
+                    count,
+                ),
+                ch if !ch.is_ascii_alphanumeric() => textobject::textobject_pair_surround(
+                    doc.syntax(),
+                    text,
+                    range,
+                    objtype,
+                    ch,
+                    count,
+                ),
+                _ => return range,
+            });
+
+            doc.set_selection(view.id, selection);
+
+            operator_fn(cx);
+        }
+    });
+}
+
+// DELETE text object commands
+fn delete_textobject_inner(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        delete_selection_op,
+        "Delete inside",
+        textobject::TextObject::Inside,
+    );
+}
+
+fn delete_textobject_around(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        delete_selection_op,
+        "Delete around",
+        textobject::TextObject::Around,
+    );
+}
+
+// CHANGE text object commands
+fn change_textobject_inner(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        change_selection_op,
+        "Change inside",
+        textobject::TextObject::Inside,
+    );
+}
+
+fn change_textobject_around(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        change_selection_op,
+        "Change around",
+        textobject::TextObject::Around,
+    );
+}
+
+// YANK text object commands
+fn yank_textobject_inner(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        yank_selection_op,
+        "Yank inside",
+        textobject::TextObject::Inside,
+    );
+}
+
+fn yank_textobject_around(cx: &mut Context) {
+    operator_with_textobject(
+        cx,
+        yank_selection_op,
+        "Yank around",
+        textobject::TextObject::Around,
+    );
+}
+
+// DELETE motion commands
+operator_motion!(
+    delete_next_word_start,
+    delete_selection_op,
+    move_next_word_start,
+    "Delete to start of next word"
+);
+operator_motion!(
+    delete_prev_word_start,
+    delete_selection_op,
+    move_prev_word_start,
+    "Delete to start of previous word"
+);
+operator_motion!(
+    delete_next_word_end,
+    delete_selection_op,
+    move_next_word_end,
+    "Delete to end of next word"
+);
+operator_motion!(
+    delete_next_long_word_start,
+    delete_selection_op,
+    move_next_long_word_start,
+    "Delete to start of next WORD"
+);
+operator_motion!(
+    delete_prev_long_word_start,
+    delete_selection_op,
+    move_prev_long_word_start,
+    "Delete to start of previous WORD"
+);
+operator_motion!(
+    delete_next_long_word_end,
+    delete_selection_op,
+    move_next_long_word_end,
+    "Delete to end of next WORD"
+);
+operator_motion!(
+    delete_to_line_end,
+    delete_selection_op,
+    goto_line_end,
+    "Delete to line end"
+);
+operator_motion!(
+    delete_to_line_start,
+    delete_selection_op,
+    goto_line_start,
+    "Delete to line start"
+);
+operator_motion!(
+    delete_to_first_nonwhitespace,
+    delete_selection_op,
+    goto_first_nonwhitespace,
+    "Delete to first non-whitespace"
+);
+operator_motion!(
+    delete_to_line,
+    delete_selection_op,
+    goto_line,
+    "Delete to line"
+);
+operator_motion!(
+    delete_to_file_start,
+    delete_selection_op,
+    goto_file_start,
+    "Delete to file start"
+);
+operator_motion!(
+    delete_to_last_line,
+    delete_selection_op,
+    goto_last_line,
+    "Delete to last line"
+);
+
+// CHANGE motion commands
+operator_motion!(
+    change_next_word_start,
+    change_selection_op,
+    move_next_word_start,
+    "Change to start of next word"
+);
+operator_motion!(
+    change_prev_word_start,
+    change_selection_op,
+    move_prev_word_start,
+    "Change to start of previous word"
+);
+operator_motion!(
+    change_next_word_end,
+    change_selection_op,
+    move_next_word_end,
+    "Change to end of next word"
+);
+operator_motion!(
+    change_next_long_word_start,
+    change_selection_op,
+    move_next_long_word_start,
+    "Change to start of next WORD"
+);
+operator_motion!(
+    change_prev_long_word_start,
+    change_selection_op,
+    move_prev_long_word_start,
+    "Change to start of previous WORD"
+);
+operator_motion!(
+    change_next_long_word_end,
+    change_selection_op,
+    move_next_long_word_end,
+    "Change to end of next WORD"
+);
+operator_motion!(
+    change_to_line_end,
+    change_selection_op,
+    goto_line_end,
+    "Change to line end"
+);
+operator_motion!(
+    change_to_line_start,
+    change_selection_op,
+    goto_line_start,
+    "Change to line start"
+);
+operator_motion!(
+    change_to_first_nonwhitespace,
+    change_selection_op,
+    goto_first_nonwhitespace,
+    "Change to first non-whitespace"
+);
+operator_motion!(
+    change_to_line,
+    change_selection_op,
+    goto_line,
+    "Change to line"
+);
+operator_motion!(
+    change_to_file_start,
+    change_selection_op,
+    goto_file_start,
+    "Change to file start"
+);
+operator_motion!(
+    change_to_last_line,
+    change_selection_op,
+    goto_last_line,
+    "Change to last line"
+);
+
+// YANK motion commands
+operator_motion!(
+    yank_next_word_start,
+    yank_selection_op,
+    move_next_word_start,
+    "Yank to start of next word"
+);
+operator_motion!(
+    yank_prev_word_start,
+    yank_selection_op,
+    move_prev_word_start,
+    "Yank to start of previous word"
+);
+operator_motion!(
+    yank_next_word_end,
+    yank_selection_op,
+    move_next_word_end,
+    "Yank to end of next word"
+);
+operator_motion!(
+    yank_next_long_word_start,
+    yank_selection_op,
+    move_next_long_word_start,
+    "Yank to start of next WORD"
+);
+operator_motion!(
+    yank_prev_long_word_start,
+    yank_selection_op,
+    move_prev_long_word_start,
+    "Yank to start of previous WORD"
+);
+operator_motion!(
+    yank_next_long_word_end,
+    yank_selection_op,
+    move_next_long_word_end,
+    "Yank to end of next WORD"
+);
+operator_motion!(
+    yank_to_line_end,
+    yank_selection_op,
+    goto_line_end,
+    "Yank to line end"
+);
+operator_motion!(
+    yank_to_line_start,
+    yank_selection_op,
+    goto_line_start,
+    "Yank to line start"
+);
+operator_motion!(
+    yank_to_first_nonwhitespace,
+    yank_selection_op,
+    goto_first_nonwhitespace,
+    "Yank to first non-whitespace"
+);
+operator_motion!(yank_to_line, yank_selection_op, goto_line, "Yank to line");
+operator_motion!(
+    yank_to_file_start,
+    yank_selection_op,
+    goto_file_start,
+    "Yank to file start"
+);
+operator_motion!(
+    yank_to_last_line,
+    yank_selection_op,
+    goto_last_line,
+    "Yank to last line"
+);
+
+// dd, cc, yy - operate on current line
+fn delete_current_line(cx: &mut Context) {
+    let (view, doc) = current!(cx.editor);
+    let text = doc.text().slice(..);
+
+    // Transform selection to select whole lines
+    let selection = doc.selection(view.id).clone().transform(|range| {
+        let from_line = text.char_to_line(range.from());
+        let to_line = text.char_to_line(range.to());
+        let from = text.line_to_char(from_line);
+        let to = text.line_to_char((to_line + 1).min(text.len_lines()));
+        Range::new(from, to)
+    });
+
+    doc.set_selection(view.id, selection);
+    delete_selection(cx);
+}
+
+fn change_current_line(cx: &mut Context) {
+    let (view, doc) = current!(cx.editor);
+    let text = doc.text().slice(..);
+
+    // Transform selection to select whole lines
+    let selection = doc.selection(view.id).clone().transform(|range| {
+        let from_line = text.char_to_line(range.from());
+        let to_line = text.char_to_line(range.to());
+        let from = text.line_to_char(from_line);
+        let to = text.line_to_char((to_line + 1).min(text.len_lines()));
+        Range::new(from, to)
+    });
+
+    doc.set_selection(view.id, selection);
+    change_selection(cx);
+}
+
+fn yank_current_line(cx: &mut Context) {
+    let (view, doc) = current!(cx.editor);
+    let text = doc.text().slice(..);
+
+    // Transform selection to select whole lines
+    let selection = doc.selection(view.id).clone().transform(|range| {
+        let from_line = text.char_to_line(range.from());
+        let to_line = text.char_to_line(range.to());
+        let from = text.line_to_char(from_line);
+        let to = text.line_to_char((to_line + 1).min(text.len_lines()));
+        Range::new(from, to)
+    });
+
+    doc.set_selection(view.id, selection);
+    yank(cx);
 }
