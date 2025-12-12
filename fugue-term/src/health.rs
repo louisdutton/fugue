@@ -4,10 +4,7 @@
 use crate::config::{Config, ConfigLoadError};
 use fugue_core::config::{default_lang_config, user_lang_config};
 use fugue_loader::grammar::load_runtime_file;
-use std::{
-    collections::HashSet,
-    io::{IsTerminal, Write},
-};
+use std::io::{IsTerminal, Write};
 use termina::{
     style::{ColorSpec, StyleExt as _, Stylized},
     Terminal as _,

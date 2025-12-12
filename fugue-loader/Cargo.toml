@@ -14,7 +14,6 @@ homepage.workspace = true
 fugue-stdx = { path = "../fugue-stdx" }
 
 anyhow = "1"
-serde = { version = "1.0", features = ["derive"] }
 toml.workspace = true
 etcetera = "0.10"
 once_cell = "1.21"

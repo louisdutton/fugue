@@ -43,7 +43,6 @@ signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
 tokio-stream = "0.1"
 futures-util = { version = "0.3", features = ["std", "async-await"], default-features = false }
 arc-swap = { version = "1.7.1" }
-termini = "1"
 indexmap = "2.12"
 libc = "0.2.177"
 
@@ -58,7 +57,6 @@ nucleo.workspace = true
 ignore = "=0.4.23"
 grep-regex = "=0.1.13"
 grep-searcher = "=0.1.14"
-grep-matcher = "=0.1.7"
 # markdown doc rendering
 pulldown-cmark = { version = "0.13", default-features = false }
 # file type detection

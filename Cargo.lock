@@ -405,7 +405,6 @@ version = "25.7.1"
 dependencies = [
  "anyhow",
  "arc-swap",
- "bitflags",
  "chrono",
  "encoding_rs",
  "foldhash 0.2.0",
@@ -489,7 +488,6 @@ dependencies = [
  "fugue-stdx",
  "log",
  "once_cell",
- "serde",
  "toml",
  "tree-house",
 ]
@@ -569,7 +567,6 @@ dependencies = [
  "fugue-vcs",
  "fugue-view",
  "futures-util",
- "grep-matcher",
  "grep-regex",
  "grep-searcher",
  "ignore",
@@ -589,7 +586,6 @@ dependencies = [
  "smallvec",
  "tempfile",
  "termina",
- "termini",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -606,7 +602,6 @@ dependencies = [
  "fugue-core",
  "fugue-view",
  "log",
- "once_cell",
  "termina",
  "termini",
  "unicode-segmentation",
@@ -659,7 +654,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "toml",
  "url",
 ]
 
@@ -3250,10 +3244,8 @@ name = "xtask"
 version = "25.7.1"
 dependencies = [
  "fugue-core",
- "fugue-loader",
  "fugue-term",
  "fugue-view",
- "toml",
 ]
 
 [[package]]

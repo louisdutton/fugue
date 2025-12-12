@@ -15,5 +15,3 @@ homepage.workspace = true
 fugue-term = { path = "../fugue-term" }
 fugue-core = { path = "../fugue-core" }
 fugue-view = { path = "../fugue-view" }
-fugue-loader = { path = "../fugue-loader" }
-toml.workspace = true
