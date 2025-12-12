@@ -66,10 +66,7 @@ FLAGS:
     --tutor                        Load the tutorial
     --health [CATEGORY]            Check for potential errors in editor setup
                                    CATEGORY can be a language or one of 'clipboard', 'languages',
-                                   'all-languages' or 'all'. 'languages' is filtered according to
-                                   user config, 'all-languages' and 'all' are not. If not specified,
-                                   the default is the same as 'all', but with languages filtering.
-    -g, --grammar {{fetch|build}}    Fetch or builds tree-sitter grammars listed in languages.toml
+                                   or 'all'. If not specified the default is the same as 'all'.
     -c, --config <file>            Specify a file to use for configuration
     -v                             Increase logging verbosity each use for up to 3 times
     --log <file>                   Specify a file to use for logging
@@ -105,16 +102,6 @@ FLAGS:
         }
 
         std::process::exit(0);
-    }
-
-    if args.fetch_grammars {
-        fugue_loader::grammar::fetch_grammars()?;
-        return Ok(0);
-    }
-
-    if args.build_grammars {
-        fugue_loader::grammar::build_grammars(None)?;
-        return Ok(0);
     }
 
     setup_logging(args.verbosity).context("failed to initialize logging")?;

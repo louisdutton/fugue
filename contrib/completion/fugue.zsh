@@ -12,8 +12,6 @@ _fugue() {
 		"--version[Prints version information]" \
 		"--tutor[Loads the tutorial]" \
 		"--health[Checks for errors in editor setup]:language:->health" \
-		"-g[Fetches or builds tree-sitter grammars]:action:->grammar" \
-		"--grammar[Fetches or builds tree-sitter grammars]:action:->grammar" \
 		"--vsplit[Splits all given files vertically]" \
 		"--hsplit[Splits all given files horizontally]" \
 		"-c[Specifies a file to use for configuration]" \
@@ -25,11 +23,8 @@ _fugue() {
 
 	case "$state" in
 	health)
-		local languages=($(fugue --health all-languages | tail -n '+2' | awk '{print $1}' | sed 's/\x1b\[[0-9;]*m//g;s/[✘✓]//g'))
+		local languages=($(fugue --health languages | tail -n '+2' | awk '{print $1}' | sed 's/\x1b\[[0-9;]*m//g;s/[✘✓]//g'))
 		_values 'language' $languages
-		;;
-	grammar)
-		_values 'action' fetch build
 		;;
 	esac
 }
