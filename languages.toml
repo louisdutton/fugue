@@ -1094,7 +1094,8 @@ shebangs = []
 comment-token = "#"
 language-servers = [ "nil", "nixd" ]
 indent = { tab-width = 2, unit = "  " }
-formatter = { command = "nixfmt" }
+formatter = { command = "alejandra" }
+auto-format = true
 
 [[grammar]]
 name = "nix"
